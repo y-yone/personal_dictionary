@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="css/design.css">
+    <script src="script/jquery-3.6.0.js"></script>
+    <script src="script/marked.js"></script>
+    <title>personal dictionary</title>
+  </head>
+  <body>
+    <h1>辞書システム</h1>
+
+    <div class='contents'>
+        <div class='menu'>
+            <div>
+                <span>辞書を選択</span>
+                <select id="dictMenu">
+                </select>
+            </div>
+
+            <div id="search">
+                <span>検索</span>
+                <input type="text" id="keyword"/>
+            </div>
+
+            <div class="wordList">
+                <span>リスト</span>
+                <div id="result">
+                </div>
+            </div>
+
+        </div>
+
+        <div class='main'>
+            <div id="data">
+            </div>
+        </div>
+    </div>
+
+    <script id="dataScript" type="text/javascript"></script>
+
+    <script type="text/javascript">
+        $().ready(function(){
+            var loadDict = document.createElement('script');
+            loadDict.type = 'text/javascript';
+            loadDict.src = 'dictionary/dict_list.js';
+            loadDict.onload = function() {
+                $('<option>', {
+                    value: '',
+                    text: '<select dictionary>'
+                }).appendTo('#dictMenu');
+
+                for(var d in dictList) {
+                    $('<option>', {
+                        value: dictList[d]['path'],
+                        text: dictList[d]['name']
+                    }).appendTo('#dictMenu');
+                }
+            };
+
+            document.body.appendChild(loadDict);
+        });
+
+        document.getElementById("dictMenu").onchange = function(event) {
+            if(event.currentTarget.value == ""){
+                return;
+            }
+            var dsc = document.getElementById('dataScript');
+            var newDict = document.createElement('script');
+            newDict.type = 'text/javascript';
+            newDict.src = 'dictionary/'+event.currentTarget.value;
+            newDict.id = 'dataScript';
+            newDict.onload = function() {
+                var result = Array();
+                for(d in dictData){
+                    result.push({
+                        text: dictData[d]['name'],
+                        value: d
+                    });
+                }
+                searchDict(document.getElementById('keyword').value);
+            };
+            document.body.replaceChild(newDict, dsc);
+        };
+
+        document.getElementById("keyword").oninput = function(event) {
+            if(!dictData) {
+                return;
+            }
+
+            searchDict(event.currentTarget.value);
+        }
+
+        function searchDict(keyword) {
+            var result = Array();
+            
+            if(keyword=='') {
+                keyword = null;
+            }
+
+            for(d in dictData){
+                if(keyword != null) {
+                    if(String(dictData[d]['name']).indexOf(keyword)==-1) {
+                        continue;
+                    }
+                }
+                result.push({
+                    text: dictData[d]['name'],
+                    value: d
+                });
+            }
+
+            var list = document.getElementById('result');
+            var clone = list.cloneNode(false);
+            var ul = document.createElement('ul');
+            clone.appendChild(ul);
+            for(d in result){
+                var elem = document.createElement('li');
+                elem.appendChild(document.createTextNode(result[d].text));
+                elem.value = result[d].value;
+                elem.onclick = function(event) {
+                    createTable(dictData[event.currentTarget.value]);
+                };
+                ul.appendChild(elem);
+            }
+            // if(result.length==1) {
+            //     createTable(dictData[result[0].value]);
+            // }
+            
+            $('#result').replaceWith(clone);
+        }
+
+        function createTable(dict) {
+            var dataDiv = document.getElementById('data');
+            dataDiv.innerHTML = marked(dict['content'])
+        }
+    </script>
+  </body>
+</html>
